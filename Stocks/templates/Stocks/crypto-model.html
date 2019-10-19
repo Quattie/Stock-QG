@@ -1,0 +1,21 @@
+{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
+<h1>Crypto Model for {{ crypto_name }}</h1>
+<div>
+  <h1>Tomorrow's Predicted Stock Price</h1>
+  <h1>${{ tom_price }}</h1>
+  <div class="row">
+    <div class="col-md-6">
+      <img
+        src="{% static 'Stocks/charts/ModelLossCrypto.png' %}"
+        class="img-fluid"
+      />
+    </div>
+    <div class="col-md-6">
+      <img
+        src="{% static 'Stocks/charts/PredictionVSReal.png' %}"
+        class="img-fluid"
+      />
+    </div>
+  </div>
+</div>
+{% endblock content %}

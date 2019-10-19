@@ -1,0 +1,26 @@
+{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
+
+<h1>Random Forest Classification on {{ request.session.ticker_str }}</h1>
+<div>
+  <h1>Tomorrow's Predicted Trend</h1>
+  {% if tom_price > 0 %}
+  <h2>Going Up</h2>
+  {% elif tom_price == 0 %}
+  <h2>Staying the Same</h2>
+  {% else %}
+  <h2>Going Down</h2>
+  {% endif %}
+  <div>
+    <img
+      src="{% static 'Stocks/charts/HistogramOf' %}{{ stock_name }}.png"
+      class="img-fluid"
+    />
+  </div>
+  <div>
+    <img
+      src="{% static 'Stocks/charts/ReturnsOf' %}{{ stock_name }}.png"
+      class="img-fluid"
+    />
+  </div>
+</div>
+{% endblock %}

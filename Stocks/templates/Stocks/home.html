@@ -1,0 +1,81 @@
+{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
+
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+{% endblock %}
+
+<div class="row">
+  <div class="col">
+    <h1>Please Enter A Stock Ticker</h1>
+    <form method="POST" class="post-form" id="ticker-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="save btn btn-default" id="ticker-button">
+        Enter
+      </button>
+    </form>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-9">
+    {{history_chart|safe}}
+  </div>
+  <div class="col-md-3" id="training-methods">
+    <div class="row mt-2 mb-2">
+      <div class="col">
+        <form action="{% url 'stock-recurrent' %}" method="GET" id="recurrent">
+          <button
+            type="submit"
+            class="save btn btn-default"
+            id="recurrent-button"
+            onclick="trainingLoad()"
+          >
+            Train Recurrent Neural Net
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col">
+        <form
+          action="{% url 'stock-random-forests' %}"
+          method="GET"
+          id="recurrent"
+        >
+          <button
+            type="submit"
+            class="save btn btn-default"
+            id="random-forests-button"
+            onclick="trainingLoad()"
+          >
+            Train Random Forest
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="row mt-2 mb-2">
+      <div class="col">
+        <form action="{% url 'stock-crypto' %}" method="GET" id="crypto">
+          <button
+            type="submit"
+            class="save btn btn-default"
+            id="crypto-button"
+            onclick="parent.location='crypto.html'"
+          >
+            Train Crypto
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="row"></div>
+    <div id="history-div"></div>
+  </div>
+</div>  
+</div>
+<script>
+  function trainingLoad() {
+    document.getElementById("overlay").style.display = "block";
+  }
+</script>
+{% endblock %}
+

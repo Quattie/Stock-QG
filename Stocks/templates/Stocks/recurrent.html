@@ -1,0 +1,18 @@
+{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
+<!-- {% block head %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+{% endblock %} -->
+
+<h1>Recurrent Neural Net Training on {{ request.session.ticker_str }}</h1>
+<div>
+  <h1>Tomorrow's Predicted Stock Price</h1>
+  <h1>${{ tom_price }}</h1>
+  <div>
+    {{ model_loss_chart | safe }}
+  </div>
+  <div>
+    {{ prediction_chart | safe }}
+    <p>{{ epochs }} epochs used</p>
+  </div>
+</div>
+{% endblock %}
