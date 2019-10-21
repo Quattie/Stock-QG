@@ -32,8 +32,8 @@ ALLOWED_HOSTS = ['galahad-env.udgp3m55jb.us-west-2.elasticbeanstalk.com',
 
 AWS_STORAGE_BUCKET_NAME = 'galahad-bucket'
 AWS_S3_REGION_NAME = 'us-west-2'  # e.g. us-east-2
-AWS_ACCESS_KEY_ID = 'AKIAJ57QCULTTIDWRSCQ'
-AWS_SECRET_ACCESS_KEY = 'HeBHYXXYXFU0YKjCIGOXM84WslvtuyV5z/8O4+8D'
+AWS_ACCESS_KEY_ID = 'MY KEY'
+AWS_SECRET_ACCESS_KEY = 'MY SECRET ACCESS KEY'
 
 # Tell django-storages the domain to use to refer to static files.
 AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
