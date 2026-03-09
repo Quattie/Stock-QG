@@ -17,8 +17,58 @@
   </div>
 </div>
 
+{% if ensemble %}
+<!-- Ensemble Signal — XGBoost + Sentiment -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card border-{% if ensemble.direction == 'up' %}success{% else %}danger{% endif %}"
+         style="background: linear-gradient(135deg, {% if ensemble.direction == 'up' %}#0a2e14{% else %}#2e0a0a{% endif %}, #0d1117);">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-3 text-center">
+            <small class="text-muted d-block mb-1">Combined Signal</small>
+            {% if ensemble.direction == 'up' %}
+            <h1 class="text-success mb-0"><i class="bi bi-arrow-up-circle-fill"></i> UP</h1>
+            {% else %}
+            <h1 class="text-danger mb-0"><i class="bi bi-arrow-down-circle-fill"></i> DOWN</h1>
+            {% endif %}
+            <span class="fw-bold">{{ ensemble.confidence }}% confidence</span>
+          </div>
+          <div class="col-md-3 text-center">
+            <small class="text-muted d-block mb-1">XGBoost (70%)</small>
+            <h4 class="mb-0 {% if direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+              {% if direction == 'up' %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
+              {{ confidence }}%
+            </h4>
+            <small class="text-muted">technical</small>
+          </div>
+          <div class="col-md-3 text-center">
+            <small class="text-muted d-block mb-1">Sentiment (30%)</small>
+            <h4 class="mb-0 {% if sentiment.sentiment_score > 0 %}text-success{% elif sentiment.sentiment_score < 0 %}text-danger{% else %}text-muted{% endif %}">
+              {% if sentiment.sentiment_score > 0 %}<i class="bi bi-arrow-up"></i>+{% endif %}{{ sentiment.sentiment_score }}
+            </h4>
+            <small class="text-muted">{{ sentiment.overall_sentiment|cut:"_" }}</small>
+          </div>
+          <div class="col-md-3 text-center">
+            <small class="text-muted d-block mb-1">Signals</small>
+            {% if ensemble.agreement %}
+            <h4 class="text-success mb-0"><i class="bi bi-check-circle-fill"></i> ALIGNED</h4>
+            <small class="text-success">higher conviction</small>
+            {% else %}
+            <h4 class="text-warning mb-0"><i class="bi bi-exclamation-triangle-fill"></i> CONFLICTING</h4>
+            <small class="text-warning">trade with caution</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Prediction Cards -->
 <div class="row g-3 mb-4">
+  {% if not ensemble %}
   <div class="col-md-3">
     <div class="card bg-dark border-{% if direction == 'up' %}success{% else %}danger{% endif %} h-100">
       <div class="card-body text-center">
@@ -28,7 +78,7 @@
         {% else %}
         <h2 class="text-danger mb-0"><i class="bi bi-arrow-down-circle-fill"></i> Going Down</h2>
         {% endif %}
-        <small class="text-muted">{{ stock_name }}</small>
+        <small class="text-muted">{{ stock_name }} — XGBoost only</small>
       </div>
     </div>
   </div>
@@ -43,7 +93,8 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  {% endif %}
+  <div class="col-md-{% if ensemble %}4{% else %}3{% endif %}">
     <div class="card bg-dark border-secondary h-100">
       <div class="card-body text-center">
         <small class="text-muted">Current Price</small>
@@ -54,7 +105,7 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-md-{% if ensemble %}4{% else %}3{% endif %}">
     <div class="card bg-dark border-secondary h-100">
       <div class="card-body text-center">
         <small class="text-muted">Backtest Accuracy</small>
@@ -63,7 +114,76 @@
       </div>
     </div>
   </div>
+  {% if ensemble %}
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Articles Analyzed</small>
+        <h3 class="mb-0">{{ sentiment.article_count }}</h3>
+        <small class="text-muted">via Claude AI</small>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
+
+{% if sentiment %}
+<!-- Sentiment Detail -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-stars"></i> AI Analyst Take</h6>
+      </div>
+      <div class="card-body">
+        <p class="mb-3">{{ sentiment.analyst_take }}</p>
+        {% if sentiment.key_themes %}
+        <div>
+          {% for theme in sentiment.key_themes %}
+          <span class="badge bg-secondary me-1 mb-1">{{ theme }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-success h-100">
+      <div class="card-header py-2">
+        <h6 class="mb-0 text-success"><i class="bi bi-arrow-up-circle"></i> Bull Case</h6>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for point in sentiment.bull_case %}
+        <li class="list-group-item bg-dark border-secondary text-muted small py-2">{{ point }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-danger h-100">
+      <div class="card-header py-2">
+        <h6 class="mb-0 text-danger"><i class="bi bi-arrow-down-circle"></i> Bear Case</h6>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for point in sentiment.bear_case %}
+        <li class="list-group-item bg-dark border-secondary text-muted small py-2">{{ point }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% elif not sentiment %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body py-2 text-center text-muted small">
+        <i class="bi bi-stars"></i> Set <code>ANTHROPIC_API_KEY</code> in <code>.env</code> to enable sentiment analysis and ensemble signals.
+        Get your key at <a href="https://console.anthropic.com" target="_blank" class="text-info">console.anthropic.com</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- Charts -->
 <div class="row g-3 mb-4">
@@ -94,7 +214,8 @@
     <small class="text-muted">
       <i class="bi bi-info-circle"></i>
       XGBoost model trained on 80% of historical data with 500 estimators.
-      Backtest shows hypothetical returns — past performance does not guarantee future results.
+      {% if ensemble %}Ensemble: 70% technical + 30% sentiment.{% endif %}
+      Past performance does not guarantee future results.
     </small>
   </div>
 </div>

@@ -29,6 +29,7 @@ MARKET_TICKERS = [
 ]
 
 _market_cache = {'data': None, 'ts': 0.0}
+_news_cache = {'data': None, 'ts': 0.0}
 _MARKET_CACHE_TTL = 300  # seconds
 
 
@@ -116,6 +117,49 @@ class Prediction:
         _market_cache['data'] = results
         _market_cache['ts'] = _time.time()
         return results
+
+    def get_market_news(self):
+        now = _time.time()
+        if _news_cache['data'] is not None and (now - _news_cache['ts']) < _MARKET_CACHE_TTL:
+            return _news_cache['data']
+
+        articles = []
+        seen_titles = set()
+
+        for symbol in ['SPY', 'QQQ']:
+            try:
+                news = yf.Ticker(symbol).news or []
+                for item in news[:8]:
+                    content = item.get('content', {})
+                    title = content.get('title', '')
+                    if not title or title in seen_titles:
+                        continue
+                    seen_titles.add(title)
+
+                    provider = content.get('provider', {})
+                    publisher = provider.get('displayName') if isinstance(provider, dict) else str(provider)
+
+                    click_url = content.get('clickThroughUrl', '')
+                    if isinstance(click_url, dict):
+                        url = click_url.get('url', '')
+                    else:
+                        url = str(click_url) if click_url else ''
+
+                    articles.append({
+                        'title': title,
+                        'publisher': publisher or 'Unknown',
+                        'date': (content.get('pubDate') or '')[:10],
+                        'url': url,
+                    })
+            except Exception:
+                continue
+
+        articles.sort(key=lambda x: x['date'], reverse=True)
+        articles = articles[:8]
+
+        _news_cache['data'] = articles
+        _news_cache['ts'] = _time.time()
+        return articles
 
     def get_history_candlestick(self, stocks):
         trace = go.Candlestick(

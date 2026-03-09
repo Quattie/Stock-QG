@@ -54,6 +54,30 @@
   </div>
 </div>
 
+<!-- Market News -->
+{% if market_news %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header py-2">
+        <h6 class="mb-0"><i class="bi bi-newspaper"></i> Market News</h6>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for article in market_news %}
+        <a href="{{ article.url }}" target="_blank" rel="noopener"
+           class="list-group-item list-group-item-action bg-dark border-secondary py-2 news-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <span class="text-white small me-3">{{ article.title }}</span>
+            <span class="text-muted text-nowrap small">{{ article.publisher }}</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if stock_info and not stock_info.error %}
 <!-- Stock Info Cards -->
 <div class="row mb-4">

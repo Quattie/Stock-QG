@@ -157,6 +157,10 @@ body {
   border-radius: 4px;
 }
 
+/* ===== News ===== */
+.news-item { transition: background-color 0.15s; }
+.news-item:hover { background-color: #161b22 !important; }
+
 /* ===== Market Cards ===== */
 .market-card { transition: transform 0.15s ease, border-color 0.2s; }
 .market-card:hover { transform: translateY(-2px); border-color: #484f58 !important; }

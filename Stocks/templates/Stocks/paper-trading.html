@@ -1,0 +1,513 @@
+{% extends 'Stocks/base.html' %}
+{% load static %}
+
+{% block title %}Paper Trading | Stawks{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+  <div class="col-12">
+    <h2><i class="bi bi-wallet2"></i> Paper Trading</h2>
+  </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+  <li class="nav-item">
+    <button class="nav-link {% if active_tab == 'live' %}active{% endif %}" data-bs-toggle="tab"
+            data-bs-target="#live-tab" type="button">
+      <i class="bi bi-broadcast"></i> Live Tracking
+      {% if live_status.active %}<span class="badge bg-success ms-1">Active</span>{% endif %}
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link {% if active_tab == 'backtest' %}active{% endif %}" data-bs-toggle="tab"
+            data-bs-target="#backtest-tab" type="button">
+      <i class="bi bi-clock-history"></i> Historical Backtest
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+<!-- ================================================================ -->
+<!-- LIVE TRACKING TAB                                                 -->
+<!-- ================================================================ -->
+<div class="tab-pane fade {% if active_tab == 'live' %}show active{% endif %}" id="live-tab">
+
+{% if live_status.active %}
+<!-- Live Dashboard -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card bg-dark border-{% if live_status.total_return >= 0 %}success{% else %}danger{% endif %} h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Portfolio Value</small>
+        <h3 class="mb-0 {% if live_status.total_return >= 0 %}text-success{% else %}text-danger{% endif %}">
+          ${{ live_status.current_value }}
+        </h3>
+        <small class="{% if live_status.total_return >= 0 %}text-success{% else %}text-danger{% endif %}">
+          {% if live_status.total_return >= 0 %}+{% endif %}{{ live_status.total_return }}%
+        </small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Tracking</small>
+        <h4 class="mb-0">{{ live_status.ticker }}</h4>
+        <small class="text-muted">{{ live_status.days_tracked }} days</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Signal Accuracy</small>
+        <h4 class="mb-0">{{ live_status.accuracy }}%</h4>
+        <small class="text-muted">{{ live_status.total_trades }} trades</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    {% if live_status.current_prediction %}
+    <div class="card bg-dark border-{% if live_status.current_prediction.direction == 'up' %}success{% else %}danger{% endif %} h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Next-Day Prediction</small>
+        {% if live_status.current_prediction.direction == 'up' %}
+        <h4 class="mb-0 text-success"><i class="bi bi-arrow-up-circle-fill"></i> UP</h4>
+        {% else %}
+        <h4 class="mb-0 text-danger"><i class="bi bi-arrow-down-circle-fill"></i> DOWN</h4>
+        {% endif %}
+        <small class="text-muted">{{ live_status.current_prediction.confidence }}% conf</small>
+      </div>
+    </div>
+    {% else %}
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Next-Day Prediction</small>
+        <h5 class="mb-0 text-muted">Awaiting data</h5>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Position Info Bar -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body py-2 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+          <i class="bi bi-cash-stack"></i> Cash: <strong class="text-white">${{ live_status.cash }}</strong>
+        </span>
+        <span class="text-muted small">
+          <i class="bi bi-box-seam"></i> Shares: <strong class="text-white">{{ live_status.shares }}</strong>
+        </span>
+        <span class="text-muted small">
+          <i class="bi bi-calendar-check"></i> Since {{ live_status.start_date }}
+        </span>
+        <span class="text-muted small">
+          <i class="bi bi-sliders"></i> Min conf: {{ live_status.confidence_threshold }}%
+        </span>
+        <span>
+          <form method="POST" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" name="action" value="live_retrain" class="btn btn-sm btn-outline-info"
+                    onclick="trainingLoad()">
+              <i class="bi bi-arrow-repeat"></i> Retrain
+            </button>
+            <button type="submit" name="action" value="live_reset" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Stop tracking and reset all live data?')">
+              <i class="bi bi-x-circle"></i> Reset
+            </button>
+          </form>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if live_chart %}
+<!-- Live Performance Chart -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Live Performance — {{ live_status.ticker }}</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ live_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Prediction History -->
+{% if live_predictions %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-list-check"></i> Recent Predictions</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-dark table-sm table-hover mb-0">
+            <thead class="sticky-top">
+              <tr>
+                <th>Date</th>
+                <th class="text-center">Predicted</th>
+                <th class="text-center">Conf</th>
+                <th class="text-center">Actual</th>
+                <th class="text-center">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in live_predictions %}
+              <tr>
+                <td class="text-muted small">{{ p.date }}</td>
+                <td class="text-center">
+                  {% if p.direction == 'up' %}
+                  <span class="text-success"><i class="bi bi-arrow-up"></i></span>
+                  {% else %}
+                  <span class="text-danger"><i class="bi bi-arrow-down"></i></span>
+                  {% endif %}
+                </td>
+                <td class="text-center text-muted small">{{ p.confidence }}%</td>
+                <td class="text-center">
+                  {% if p.actual_direction %}
+                    {% if p.actual_direction == 'up' %}
+                    <span class="text-success"><i class="bi bi-arrow-up"></i></span>
+                    {% else %}
+                    <span class="text-danger"><i class="bi bi-arrow-down"></i></span>
+                    {% endif %}
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if p.correct == True %}
+                  <span class="badge bg-success">HIT</span>
+                  {% elif p.correct == False %}
+                  <span class="badge bg-danger">MISS</span>
+                  {% else %}
+                  <span class="text-muted small">pending</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-journal-text"></i> Live Trades</h6>
+      </div>
+      <div class="card-body p-0">
+        {% if live_trades %}
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-dark table-sm table-hover mb-0">
+            <thead class="sticky-top">
+              <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th class="text-end">Shares</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">P&L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in live_trades %}
+              <tr>
+                <td class="text-muted small">{{ t.date }}</td>
+                <td>
+                  {% if t.action == 'BUY' %}
+                  <span class="badge bg-success">BUY</span>
+                  {% else %}
+                  <span class="badge bg-danger">SELL</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ t.shares }}</td>
+                <td class="text-end">${{ t.price }}</td>
+                <td class="text-end {% if t.pnl %}{% if t.pnl > 0 %}text-success{% else %}text-danger{% endif %}{% endif %}">
+                  {% if t.pnl %}${{ t.pnl }}{% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">No trades executed yet</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Live Setup Form -->
+<div class="row mb-4">
+  <div class="col-lg-8 mx-auto">
+    <div class="card bg-dark border-info">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-broadcast"></i> Start Live Tracking</h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Train XGBoost on all available data for a ticker, then track real predictions day by day.
+          Come back each day to see how the model performs with your capital.
+        </p>
+        <form method="POST" class="row g-3 align-items-end">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="live_start">
+          <div class="col-sm-3">
+            <label class="form-label small text-muted">Ticker</label>
+            <input type="text" name="live_ticker" class="form-control" placeholder="AAPL" required>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small text-muted">Capital ($)</label>
+            <input type="number" name="live_cash" class="form-control" value="10000" min="100" step="100">
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small text-muted">Min Confidence (%)</label>
+            <input type="number" name="live_confidence" class="form-control" value="55" min="50" max="95" step="1">
+          </div>
+          <div class="col-sm-3">
+            <button type="submit" class="btn btn-info w-100" onclick="trainingLoad()">
+              <i class="bi bi-play-fill"></i> Start Tracking
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+</div><!-- end live tab pane -->
+
+<!-- ================================================================ -->
+<!-- BACKTEST TAB                                                       -->
+<!-- ================================================================ -->
+<div class="tab-pane fade {% if active_tab == 'backtest' %}show active{% endif %}" id="backtest-tab">
+
+<!-- Backtest Form -->
+<div class="row mb-4">
+  <div class="col-lg-8 mx-auto">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body">
+        <form method="POST" class="row g-3 align-items-end">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="simulate">
+          <div class="col-sm-3">
+            <label class="form-label small text-muted">Ticker</label>
+            <input type="text" name="ticker" class="form-control" placeholder="AAPL"
+                   value="{{ results.ticker|default:'' }}" required>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small text-muted">Starting Capital ($)</label>
+            <input type="number" name="initial_cash" class="form-control"
+                   value="{{ results.initial_cash|default:'10000' }}" min="100" step="100">
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small text-muted">Min Confidence (%)</label>
+            <input type="number" name="confidence_threshold" class="form-control"
+                   value="{{ results.confidence_threshold|default:'55' }}" min="50" max="95" step="1">
+          </div>
+          <div class="col-sm-3 d-flex gap-2">
+            <button type="submit" class="btn btn-success flex-grow-1" onclick="trainingLoad()">
+              <i class="bi bi-play-fill"></i> Simulate
+            </button>
+            <button type="submit" name="action" value="reset" class="btn btn-outline-danger"
+                    onclick="return confirm('Reset backtest data?')">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if results %}
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Final Value</small>
+        <h4 class="mb-0 {% if results.total_return >= 0 %}text-success{% else %}text-danger{% endif %}">
+          ${{ results.final_value }}
+        </h4>
+        <small class="text-muted">from ${{ results.initial_cash|floatformat:0 }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-{% if results.total_return >= 0 %}success{% else %}danger{% endif %} h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Strategy Return</small>
+        <h4 class="mb-0 {% if results.total_return >= 0 %}text-success{% else %}text-danger{% endif %}">
+          {% if results.total_return >= 0 %}+{% endif %}{{ results.total_return }}%
+        </h4>
+        <small class="text-muted">vs B&H {% if results.buy_hold_return >= 0 %}+{% endif %}{{ results.buy_hold_return }}%</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Win Rate</small>
+        <h4 class="mb-0">{{ results.win_rate }}%</h4>
+        <small class="text-muted">{{ results.total_trades }} trades</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Signal Accuracy</small>
+        <h4 class="mb-0">{{ results.signal_accuracy }}%</h4>
+        <small class="text-muted">correct predictions</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Max Drawdown</small>
+        <h4 class="mb-0 text-danger">-{{ results.max_drawdown }}%</h4>
+        <small class="text-muted">peak to trough</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Avg Win / Loss</small>
+        <h5 class="mb-0">
+          <span class="text-success">${{ results.avg_win }}</span>
+          <span class="text-muted">/</span>
+          <span class="text-danger">${{ results.avg_loss }}</span>
+        </h5>
+        <small class="text-muted">per round-trip</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Performance Chart -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header d-flex justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Portfolio Performance — {{ results.ticker }}</h5>
+        <small class="text-muted">{{ results.test_start }} to {{ results.test_end }}</small>
+      </div>
+      <div class="card-body chart-container">
+        {{ performance_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawdown Chart -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-down"></i> Drawdown</h5>
+      </div>
+      <div class="card-body">
+        {{ drawdown_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Trade Log -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header d-flex justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-journal-text"></i> Trade Log</h5>
+        <small class="text-muted">{{ results.total_trades }} trades</small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+          <table class="table table-dark table-hover table-sm mb-0">
+            <thead class="sticky-top">
+              <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th class="text-end">Shares</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">P&L</th>
+                <th class="text-end">Return</th>
+                <th class="text-center">Conf</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for trade in trades %}
+              <tr>
+                <td class="text-muted small">{{ trade.date }}</td>
+                <td>
+                  {% if trade.action == 'BUY' %}
+                  <span class="badge bg-success">BUY</span>
+                  {% else %}
+                  <span class="badge bg-danger">{{ trade.action }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ trade.shares }}</td>
+                <td class="text-end">${{ trade.price }}</td>
+                <td class="text-end">${{ trade.total }}</td>
+                <td class="text-end {% if trade.pnl %}{% if trade.pnl > 0 %}text-success{% else %}text-danger{% endif %}{% endif %}">
+                  {% if trade.pnl %}${{ trade.pnl }}{% else %}—{% endif %}
+                </td>
+                <td class="text-end {% if trade.return_pct %}{% if trade.return_pct > 0 %}text-success{% else %}text-danger{% endif %}{% endif %}">
+                  {% if trade.return_pct %}{{ trade.return_pct }}%{% else %}—{% endif %}
+                </td>
+                <td class="text-center text-muted small">{{ trade.confidence }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- Empty state -->
+<div class="row">
+  <div class="col-lg-8 mx-auto text-center py-5">
+    <i class="bi bi-clock-history display-1 text-muted"></i>
+    <h3 class="mt-4 text-muted">No backtest results yet</h3>
+    <p class="text-muted">Run a historical simulation to see how XGBoost would have traded a stock.</p>
+  </div>
+</div>
+{% endif %}
+
+</div><!-- end backtest tab pane -->
+
+</div><!-- end tab-content -->
+
+<div class="row mt-4 mb-4">
+  <div class="col-12">
+    <small class="text-muted">
+      <i class="bi bi-info-circle"></i>
+      Paper trading — no real money involved. All data saved to <code>data/</code> directory.
+      Past performance does not guarantee future results.
+    </small>
+  </div>
+</div>
+{% endblock %}

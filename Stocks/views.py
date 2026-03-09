@@ -3,6 +3,7 @@ from .forms import TickerForm, EpochForm, CryptoForm
 from .predictions import Prediction
 from .RFClassifier import RFClassifier
 from .XGBModel import XGBStockModel
+from .paper_trader import PaperTrader, LiveTrader
 from .Crypto import Crypto
 from .sentiment import analyze_sentiment
 
@@ -18,6 +19,7 @@ def home(request):
 
     pred = Prediction()
     market_overview = pred.get_market_overview()
+    market_news = pred.get_market_news()
 
     if request.method == "POST":
         ticker = TickerForm(request.POST)
@@ -42,6 +44,7 @@ def home(request):
     return render(request, 'Stocks/home.html', context={
         'form': ticker,
         'market_overview': market_overview,
+        'market_news': market_news,
         'history_chart': history_chart,
         'volume_chart': volume_chart,
         'ma_chart': ma_chart,
@@ -138,6 +141,24 @@ def xgboost(request):
     else:
         implied_price = round(current_price * (1 - avg_move), 2)
 
+    # Sentiment + ensemble signal (if API key configured)
+    sentiment = None
+    ensemble = None
+    try:
+        sentiment = analyze_sentiment(ticker_str)
+        if sentiment:
+            xgb_signal = (results['confidence'] / 100) * (1 if results['direction'] == 'up' else -1)
+            sent_signal = sentiment['sentiment_score'] / 100
+            combined = 0.7 * xgb_signal + 0.3 * sent_signal
+            sent_direction = 'up' if sentiment['sentiment_score'] > 0 else 'down'
+            ensemble = {
+                'direction': 'up' if combined > 0 else 'down',
+                'confidence': round(min(abs(combined) * 100, 100), 1),
+                'agreement': results['direction'] == sent_direction,
+            }
+    except Exception:
+        pass
+
     return render(request, 'Stocks/xgboost.html', context={
         'title': 'XGBoost',
         'stock_name': ticker_str,
@@ -149,6 +170,103 @@ def xgboost(request):
         'implied_price': implied_price,
         'feature_chart': feature_chart,
         'backtest_chart': backtest_chart,
+        'sentiment': sentiment,
+        'ensemble': ensemble,
+    })
+
+
+def paper_trading(request):
+    trader = PaperTrader()
+    live = LiveTrader()
+    results = None
+    performance_chart = ''
+    drawdown_chart = ''
+    trades = []
+    active_tab = 'backtest'
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # --- backtest actions ---
+        if action == 'reset':
+            trader.reset()
+        elif action == 'simulate':
+            ticker = request.POST.get('ticker', '').upper().strip()
+            initial_cash = float(request.POST.get('initial_cash', 10000))
+            confidence = float(request.POST.get('confidence_threshold', 55))
+
+            try:
+                results = trader.run_backtest(ticker, initial_cash, confidence)
+                trades = trader.trades
+                performance_chart = trader.make_performance_chart(
+                    trader.snapshots, initial_cash, trades)
+                drawdown_chart = trader.make_drawdown_chart(trader.snapshots)
+            except Exception as e:
+                return render(request, 'Stocks/paper-trading.html', {
+                    'title': 'Paper Trading',
+                    'error': str(e),
+                })
+
+        # --- live tracking actions ---
+        elif action == 'live_start':
+            active_tab = 'live'
+            ticker = request.POST.get('live_ticker', '').upper().strip()
+            cash = float(request.POST.get('live_cash', 10000))
+            conf = float(request.POST.get('live_confidence', 55))
+            try:
+                live.start(ticker, cash, conf)
+            except Exception as e:
+                return render(request, 'Stocks/paper-trading.html', {
+                    'title': 'Paper Trading',
+                    'error': f'Live tracking error: {e}',
+                })
+
+        elif action == 'live_retrain':
+            active_tab = 'live'
+            try:
+                live.retrain()
+            except Exception as e:
+                pass  # non-critical
+
+        elif action == 'live_reset':
+            active_tab = 'live'
+            live.reset()
+
+    else:
+        # GET — reload backtest if available
+        if trader.last_backtest and trader.snapshots:
+            results = trader.last_backtest
+            trades = trader.trades
+            performance_chart = trader.make_performance_chart(
+                trader.snapshots, trader.portfolio['initial_cash'], trades)
+            drawdown_chart = trader.make_drawdown_chart(trader.snapshots)
+
+    # --- always update live tracker on page load ---
+    live_status = None
+    live_chart = ''
+    if live.is_active:
+        try:
+            live.update()
+        except Exception:
+            pass  # don't crash the page if live update fails
+        live_status = live.get_status()
+        live_chart = live.make_performance_chart()
+        if active_tab != 'live' and not results:
+            active_tab = 'live'
+    elif live.config:
+        live_status = live.get_status()
+
+    return render(request, 'Stocks/paper-trading.html', context={
+        'title': 'Paper Trading',
+        'active_tab': active_tab,
+        'results': results,
+        'performance_chart': performance_chart,
+        'drawdown_chart': drawdown_chart,
+        'trades': trades,
+        'live_status': live_status,
+        'live_chart': live_chart,
+        'live_predictions': list(reversed(live.predictions[-20:])),
+        'live_trades': list(reversed(live.trades[-20:])),
     })
 
 

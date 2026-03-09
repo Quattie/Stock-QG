@@ -15,10 +15,12 @@ and portfolio management — all in a Django web app.
 - `Stocks/predictions.py` — LSTM model (legacy), market overview, stock data
 - `Stocks/XGBModel.py` — XGBoost classifier with technical indicator features
 - `Stocks/RFClassifier.py` — Random Forest classifier (legacy)
+- `Stocks/paper_trader.py` — Paper trading simulator with XGBoost backtest engine
 - `Stocks/Crypto.py` — Crypto LSTM model
 - `Stocks/sentiment.py` — Claude-powered news sentiment analysis
 - `Stocks/views.py` — All view functions
 - `Stocks/urls.py` — URL routing
+- `data/` — Paper trading state (portfolio.json, trades.json, snapshots.json, last_backtest.json)
 
 ## Architecture
 ```
@@ -34,6 +36,11 @@ blocks the web worker — async execution is on the backlog.
 - LSTM was fixed: sigmoid→linear output, dropout 0.5→0.15, timesteps 5→30,
   column order bug (was predicting Low instead of Close)
 - XGBoost is the primary model — classification (up/down) with confidence %
+- Paper trading simulator runs day-by-day backtests, saves state to `data/` as JSON
+- Paper trader uses confidence threshold (default 55%) to filter low-conviction signals
+- **Live Tracker** (`LiveTrader`): trains XGBoost on all data, makes forward predictions
+  daily, auto-updates on each page load, evaluates accuracy against actual market data.
+  Model persisted via joblib. Retrain button refreshes model with latest data.
 - `ANTHROPIC_API_KEY` must come from console.anthropic.com (separate from claude.ai subscription)
 
 ## Broker Integration Notes
@@ -51,7 +58,10 @@ Recommendation: Start with Alpaca paper trading, then graduate to live.
 - [ ] Add 5-day sparkline mini-charts to market overview cards
 - [ ] Walk-forward cross-validation for XGBoost (rolling retrain windows)
 - [ ] Show XGBoost prediction confidence history (how confident was it over time?)
-- [ ] Alpaca paper trading integration — place trades based on XGBoost signals
+- [ ] Alpaca paper trading integration — place real paper trades via API
+- [ ] Multi-ticker paper trading — simulate portfolio across multiple stocks
+- [ ] Add transaction costs / slippage to paper trader backtest
+- [ ] Sharpe ratio calculation on paper trading results
 
 ### P1 — Short Term
 - [ ] Sector ETF heatmap panel (XLK, XLF, XLE, XLV, etc.)
@@ -60,7 +70,6 @@ Recommendation: Start with Alpaca paper trading, then graduate to live.
 - [ ] Ensemble model: combine XGBoost + sentiment + LSTM signals
 - [ ] LSTM: add technical indicator features to input (RSI, MACD, etc.)
 - [ ] LSTM: predict returns instead of price levels
-- [ ] Risk metrics: Sharpe ratio, max drawdown, win rate on backtest
 - [ ] Position sizing logic (Kelly criterion or fixed fractional)
 
 ### P2 — Medium Term

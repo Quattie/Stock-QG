@@ -37,6 +37,10 @@ staticfiles/
 *.swp
 *.swo
 
+# Paper trading data
+data/*.json
+data/*.joblib
+
 # Generated charts
 Stocks/static/Stocks/charts/*.png
 static/Stocks/charts/*.png
