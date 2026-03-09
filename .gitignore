@@ -1,3 +1,4 @@
+# macOS
 .DS_Store
 .DS_Store?
 ._*
@@ -5,3 +6,37 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+*.log
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Generated charts
+Stocks/static/Stocks/charts/*.png
+static/Stocks/charts/*.png

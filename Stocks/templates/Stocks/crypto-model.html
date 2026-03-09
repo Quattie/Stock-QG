@@ -1,21 +1,73 @@
-{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
-<h1>Crypto Model for {{ crypto_name }}</h1>
-<div>
-  <h1>Tomorrow's Predicted Stock Price</h1>
-  <h1>${{ tom_price }}</h1>
-  <div class="row">
-    <div class="col-md-6">
-      <img
-        src="{% static 'Stocks/charts/ModelLossCrypto.png' %}"
-        class="img-fluid"
-      />
+{% extends 'Stocks/base.html' %}
+{% load static %}
+
+{% block title %}Crypto Model - {{ crypto_name }} | Stawks{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'stock-crypto' %}">Crypto</a></li>
+        <li class="breadcrumb-item active">LSTM - {{ crypto_name }}</li>
+      </ol>
+    </nav>
+    <h2><i class="bi bi-diagram-3"></i> Crypto LSTM Results</h2>
+    <p class="text-muted">Neural network trained on {{ crypto_name }}</p>
+  </div>
+</div>
+
+<!-- Prediction -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card bg-dark border-success h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Tomorrow's Predicted Price</small>
+        <h1 class="text-success mb-0">${{ tom_price }}</h1>
+        <small class="text-muted">{{ crypto_name }}</small>
+      </div>
     </div>
-    <div class="col-md-6">
-      <img
-        src="{% static 'Stocks/charts/PredictionVSReal.png' %}"
-        class="img-fluid"
-      />
+  </div>
+  <div class="col-md-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Model</small>
+        <h4 class="mb-0">LSTM Neural Network</h4>
+        <small class="text-muted">30 epochs, batch size 2</small>
+      </div>
     </div>
   </div>
 </div>
-{% endblock content %}
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-down"></i> Model Loss</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ model_loss_chart|safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bullseye"></i> Prediction vs Actual</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ prediction_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <a href="{% url 'stock-crypto' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Back to Crypto
+    </a>
+  </div>
+</div>
+{% endblock %}

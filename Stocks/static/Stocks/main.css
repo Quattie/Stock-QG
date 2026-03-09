@@ -1,217 +1,177 @@
+/* ===== Base ===== */
 body {
-  background-color: black;
-  color: #382d54;
-  margin-top: 5rem;
-  text-align: center;
+  background-color: #0d1117;
+  color: #e0e0e0;
+  margin-top: 70px;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: #444444;
+/* ===== Navbar ===== */
+.navbar {
+  background-color: #161b22 !important;
+  border-bottom: 1px solid #30363d;
+  backdrop-filter: blur(10px);
 }
 
-.with-margin {
-  margin-bottom: 5px;
+.navbar-brand {
+  font-size: 1.4rem;
 }
 
-ul {
-  margin: 0;
+.nav-link {
+  color: #8b949e !important;
+  transition: color 0.2s;
 }
 
-#recurrent-button {
-  background-color: #3db84a;
+.nav-link:hover {
+  color: #f0f6fc !important;
 }
 
-#random-forests-button {
-  background-color: #3db84a;
+/* ===== Cards ===== */
+.card {
+  border-radius: 8px;
+  transition: border-color 0.2s;
 }
 
-#ticker-button {
-  background-color: #3db84a;
+.card:hover {
+  border-color: #484f58 !important;
 }
 
-#crypto-button {
-  background-color: #3db84a;
+.card-header {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid #30363d;
 }
 
-#crypto-model-button {
-  background-color: #3db84a;
-  margin-top: 20px;
+/* ===== Charts ===== */
+.chart-container {
+  min-height: 300px;
 }
 
-#ticker-form {
-  display: inline-block;
+.chart-container .js-plotly-plot {
+  width: 100% !important;
 }
 
-.bg-steel {
-  background-color: #382d54;
+/* ===== Buttons ===== */
+.btn-success {
+  background-color: #238636;
+  border-color: #238636;
 }
 
-.site-header .navbar-nav .nav-link {
-  color: #cbd5db;
+.btn-success:hover {
+  background-color: #2ea043;
+  border-color: #2ea043;
 }
 
-.site-header .navbar-nav .nav-link:hover {
-  color: #ffffff;
+/* ===== Forms ===== */
+.form-control {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  color: #e0e0e0;
+  min-width: 200px;
 }
 
-.site-header .navbar-nav .nav-link.active {
-  font-weight: 500;
+.form-control:focus {
+  background-color: #0d1117;
+  border-color: #238636;
+  color: #e0e0e0;
+  box-shadow: 0 0 0 0.2rem rgba(35, 134, 54, 0.25);
 }
 
-.content-section {
-  background: #498a50;
-  padding: 10px 20px;
-  border: 1px solid #3db84a;
-  border-radius: 3px;
-  margin-bottom: 20px;
+.form-control::placeholder {
+  color: #484f58;
 }
 
-.article-title {
-  color: #3db84a;
-}
-
-a.article-title:hover {
-  color: #3db84a;
-  text-decoration: none;
-}
-
-.article-content {
-  white-space: pre-line;
-}
-
-.article-img {
-  height: 65px;
-  width: 65px;
-  margin-right: 16px;
-}
-
-.article-metadata {
-  padding-bottom: 1px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid #3db84a;
-}
-
-.article-metadata a:hover {
-  color: #333;
-  text-decoration: none;
-}
-
-.article-svg {
-  width: 25px;
-  height: 25px;
-  vertical-align: middle;
-}
-
-.account-img {
-  height: 125px;
-  width: 125px;
-  margin-right: 20px;
-  margin-bottom: 16px;
-}
-
-.account-heading {
-  font-size: 2.5rem;
-}
-
-.spinner {
-  position: absolute;
-  top: 48%;
-  left: 48%;
-  width: 50px;
-  height: 40px;
-  text-align: center;
-  font-size: 10px;
-}
-
-.spinner > div {
-  background-color: greenyellow;
-  height: 100%;
-  width: 6px;
-  display: inline-block;
-
-  -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
-  animation: sk-stretchdelay 1.2s infinite ease-in-out;
-}
-
-.spinner .rect2 {
-  -webkit-animation-delay: -1.1s;
-  animation-delay: -1.1s;
-}
-
-.spinner .rect3 {
-  -webkit-animation-delay: -1s;
-  animation-delay: -1s;
-}
-
-.spinner .rect4 {
-  -webkit-animation-delay: -0.9s;
-  animation-delay: -0.9s;
-}
-
-.spinner .rect5 {
-  -webkit-animation-delay: -0.8s;
-  animation-delay: -0.8s;
-}
-
-@-webkit-keyframes sk-stretchdelay {
-  0%,
-  40%,
-  100% {
-    -webkit-transform: scaleY(0.4);
-  }
-  20% {
-    -webkit-transform: scaleY(1);
-  }
-}
-
-@keyframes sk-stretchdelay {
-  0%,
-  40%,
-  100% {
-    transform: scaleY(0.4);
-    -webkit-transform: scaleY(0.4);
-  }
-  20% {
-    transform: scaleY(1);
-    -webkit-transform: scaleY(1);
-  }
-}
-
+/* ===== Loading Overlay ===== */
 #overlay {
-  position: fixed; /* Sit on top of the page content */
-  display: none; /* Hidden by default */
-  width: 100%; /* Full width (cover the whole page) */
-  height: 100%; /* Full height (cover the whole page) */
+  position: fixed;
+  display: none;
+  width: 100%;
+  height: 100%;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7); /* Black background with opacity */
-  z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
-  cursor: pointer; /* Add a pointer on hover */
+  background-color: rgba(13, 17, 23, 0.9);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
 }
 
-#tickerform {
-  color: antiquewhite;
-  text-emphasis-color: red;
-}
-/* #training-methods {
-  display: none;
-} */
-
-/* #stock-name {
-  display: none;
+#overlay-content {
+  text-align: center;
 }
 
-#history-chart {
-  display: none;
+/* ===== Breadcrumbs ===== */
+.breadcrumb {
+  background: none;
+  padding: 0;
 }
 
-.main-info {
-  display: none;
-} */
+.breadcrumb-item a {
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+.breadcrumb-item.active {
+  color: #8b949e;
+}
+
+/* ===== Badges ===== */
+.badge.bg-secondary {
+  background-color: #30363d !important;
+}
+
+/* ===== Alerts ===== */
+.alert-danger {
+  background-color: #3d1117;
+  border-color: #f85149;
+  color: #f85149;
+}
+
+/* ===== Sentiment ===== */
+.sentiment-strongly-bullish {
+  background: linear-gradient(135deg, #0a2e14, #0d1117);
+  border: 1px solid #00c853 !important;
+}
+.sentiment-bullish {
+  background: linear-gradient(135deg, #0a1f10, #0d1117);
+  border: 1px solid #238636 !important;
+}
+.sentiment-neutral {
+  background: linear-gradient(135deg, #1a1a2e, #0d1117);
+  border: 1px solid #484f58 !important;
+}
+.sentiment-bearish {
+  background: linear-gradient(135deg, #2e0a0a, #0d1117);
+  border: 1px solid #b91c1c !important;
+}
+.sentiment-strongly-bearish {
+  background: linear-gradient(135deg, #3d0a0a, #0d1117);
+  border: 1px solid #ff1744 !important;
+}
+
+.sentiment-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.sentiment-bar {
+  height: 8px;
+  background-color: #30363d;
+  border-radius: 4px;
+}
+
+/* ===== Market Cards ===== */
+.market-card { transition: transform 0.15s ease, border-color 0.2s; }
+.market-card:hover { transform: translateY(-2px); border-color: #484f58 !important; }
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  body {
+    margin-top: 60px;
+  }
+
+  .card-body h3 {
+    font-size: 1.3rem;
+  }
+
+  .chart-container {
+    min-height: 200px;
+  }
+}

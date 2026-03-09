@@ -1,0 +1,109 @@
+{% extends 'Stocks/base.html' %}
+{% load static %}
+
+{% block title %}XGBoost Results - {{ stock_name }} | Stawks{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'stock-home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">XGBoost - {{ stock_name }}</li>
+      </ol>
+    </nav>
+    <h2><i class="bi bi-lightning-fill"></i> XGBoost Classifier Results</h2>
+    <p class="text-muted">Gradient-boosted trees with 24 engineered technical indicators on {{ stock_name }}</p>
+  </div>
+</div>
+
+<!-- Prediction Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card bg-dark border-{% if direction == 'up' %}success{% else %}danger{% endif %} h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Tomorrow's Prediction</small>
+        {% if direction == 'up' %}
+        <h2 class="text-success mb-0"><i class="bi bi-arrow-up-circle-fill"></i> Going Up</h2>
+        {% else %}
+        <h2 class="text-danger mb-0"><i class="bi bi-arrow-down-circle-fill"></i> Going Down</h2>
+        {% endif %}
+        <small class="text-muted">{{ stock_name }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Confidence</small>
+        <h3 class="mb-0 {% if confidence >= 60 %}text-success{% elif confidence >= 55 %}text-warning{% else %}text-muted{% endif %}">
+          {{ confidence }}%
+        </h3>
+        <small class="text-muted">model probability</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Current Price</small>
+        <h3 class="mb-0">${{ current_price }}</h3>
+        <small class="text-muted {% if direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+          implied ~${{ implied_price }}
+        </small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Backtest Accuracy</small>
+        <h3 class="mb-0">{{ accuracy }}%</h3>
+        <small class="text-muted">precision {{ precision }}%</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bar-chart-steps"></i> Feature Importance</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ feature_chart|safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Backtest: Strategy vs Buy & Hold</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ backtest_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <small class="text-muted">
+      <i class="bi bi-info-circle"></i>
+      XGBoost model trained on 80% of historical data with 500 estimators.
+      Backtest shows hypothetical returns — past performance does not guarantee future results.
+    </small>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <a href="{% url 'stock-home' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

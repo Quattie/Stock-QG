@@ -1,0 +1,13 @@
+django>=5.1,<5.2
+tensorflow>=2.16,<3.0
+scikit-learn>=1.5,<2.0
+xgboost>=2.0
+yfinance>=0.2.40
+plotly>=5.22,<6.0
+pandas>=2.2,<3.0
+numpy>=1.26
+python-dotenv>=1.0
+tqdm>=4.66
+matplotlib>=3.9
+seaborn>=0.13
+anthropic>=0.50.0

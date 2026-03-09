@@ -1,26 +1,88 @@
-{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
+{% extends 'Stocks/base.html' %}
+{% load static %}
 
-<h1>Random Forest Classification on {{ request.session.ticker_str }}</h1>
-<div>
-  <h1>Tomorrow's Predicted Trend</h1>
-  {% if tom_price > 0 %}
-  <h2>Going Up</h2>
-  {% elif tom_price == 0 %}
-  <h2>Staying the Same</h2>
-  {% else %}
-  <h2>Going Down</h2>
-  {% endif %}
-  <div>
-    <img
-      src="{% static 'Stocks/charts/HistogramOf' %}{{ stock_name }}.png"
-      class="img-fluid"
-    />
+{% block title %}Random Forest Results - {{ stock_name }} | Stawks{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'stock-home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Random Forest - {{ stock_name }}</li>
+      </ol>
+    </nav>
+    <h2><i class="bi bi-tree"></i> Random Forest Classifier Results</h2>
+    <p class="text-muted">Ensemble classification on {{ stock_name }}</p>
   </div>
-  <div>
-    <img
-      src="{% static 'Stocks/charts/ReturnsOf' %}{{ stock_name }}.png"
-      class="img-fluid"
-    />
+</div>
+
+<!-- Prediction Card -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card bg-dark border-{% if tom_price > 0 %}success{% else %}danger{% endif %} h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Tomorrow's Predicted Trend</small>
+        {% if tom_price > 0 %}
+        <h2 class="text-success mb-0"><i class="bi bi-arrow-up-circle-fill"></i> Going Up</h2>
+        {% elif tom_price == 0 %}
+        <h2 class="text-warning mb-0"><i class="bi bi-dash-circle-fill"></i> Flat</h2>
+        {% else %}
+        <h2 class="text-danger mb-0"><i class="bi bi-arrow-down-circle-fill"></i> Going Down</h2>
+        {% endif %}
+        <small class="text-muted">{{ stock_name }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Model Type</small>
+        <h4 class="mb-0">Random Forest</h4>
+        <small class="text-muted">500 estimators, max depth 10</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Classification</small>
+        <h4 class="mb-0">Binary</h4>
+        <small class="text-muted">Up (+1) or Down (-1)</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Returns Distribution</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ histogram_chart|safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Cumulative Returns</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ returns_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <a href="{% url 'stock-home' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
   </div>
 </div>
 {% endblock %}

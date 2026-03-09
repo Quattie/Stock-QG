@@ -1,45 +1,128 @@
-{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
+{% extends 'Stocks/base.html' %}
+{% load static %}
 
-<h1>Crypto Predictions Suck</h1>
-<h2>Please enter a crypto name or tag</h2>
-<div class="row">
-  <div class="col">
-    <form method="POST" class="post-form" id="crypto-form">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="save btn btn-default" id="crypto-button">
-        Enter
-      </button>
-    </form>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12">
-    {{ crypto_history_chart | safe }}
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12">
-    <form
-      action="{% url 'stock-crypto-model' %}"
-      method="GET"
-      id="crypto-model"
-    >
-      <button
-        type="submit"
-        class="save btn btn-default"
-        id="crypto-model-button"
-        onclick="trainingLoad()"
-      >
-        Train Model
-      </button>
-    </form>
-  </div>
-</div>
-<script>
-  function trainingLoad() {
-    document.getElementById("overlay").style.display = "block";
-  }
-</script>
+{% block title %}Crypto | Stawks{% endblock %}
 
+{% block content %}
+<!-- Search Section -->
+<div class="row mb-4">
+  <div class="col-lg-6 mx-auto">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body text-center">
+        <h4 class="card-title mb-3"><i class="bi bi-currency-bitcoin"></i> Search Cryptocurrency</h4>
+        <form method="POST" class="d-flex gap-2 justify-content-center">
+          {% csrf_token %}
+          {{ form.crypto }}
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-arrow-right"></i> Analyze
+          </button>
+        </form>
+        <small class="text-muted mt-2 d-block">Supports: Bitcoin, Ethereum, Solana, Dogecoin, Cardano, XRP, Litecoin</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if crypto_info and not crypto_info.error %}
+<!-- Crypto Info Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Current Price</small>
+        <h3 class="mb-0 text-success">${{ crypto_info.current_price }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Prev Close</small>
+        <h4 class="mb-0">${{ crypto_info.previous_close }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Day Range</small>
+        <h6 class="mb-0">${{ crypto_info.day_low }} - ${{ crypto_info.day_high }}</h6>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Volume</small>
+        <h5 class="mb-0">{{ crypto_info.volume|floatformat:0 }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">52W Range</small>
+        <h6 class="mb-0">${{ crypto_info.fifty_two_week_low }} - ${{ crypto_info.fifty_two_week_high }}</h6>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Market Cap</small>
+        <h5 class="mb-0">{{ crypto_info.market_cap|floatformat:0 }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-candlestick-chart"></i> {{ crypto_info.name }} Price Chart</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ crypto_history_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Train Model -->
+<div class="row mb-4">
+  <div class="col-md-6 mx-auto">
+    <div class="card bg-dark border-success">
+      <div class="card-body text-center">
+        <h5><i class="bi bi-diagram-3"></i> Train LSTM Model</h5>
+        <p class="text-muted">Train an LSTM neural network to predict tomorrow's price</p>
+        <form action="{% url 'stock-crypto-model' %}" method="GET">
+          <button type="submit" class="btn btn-success btn-lg" onclick="trainingLoad()">
+            <i class="bi bi-play-fill"></i> Train Model
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif crypto_info.error %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i> Error: {{ crypto_info.error }}
+    </div>
+  </div>
+</div>
+{% else %}
+<!-- Empty state -->
+<div class="row">
+  <div class="col-lg-6 mx-auto text-center py-5">
+    <i class="bi bi-currency-bitcoin display-1 text-success"></i>
+    <h3 class="mt-4">Crypto Dashboard</h3>
+    <p class="text-muted">Enter a cryptocurrency name or ticker above to view price data and train ML models.</p>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

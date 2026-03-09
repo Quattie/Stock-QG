@@ -1,18 +1,82 @@
-{% extends 'Stocks/base.html'%} {% load static %} {% block content %}
-<!-- {% block head %}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-{% endblock %} -->
+{% extends 'Stocks/base.html' %}
+{% load static %}
 
-<h1>Recurrent Neural Net Training on {{ request.session.ticker_str }}</h1>
-<div>
-  <h1>Tomorrow's Predicted Stock Price</h1>
-  <h1>${{ tom_price }}</h1>
-  <div>
-    {{ model_loss_chart | safe }}
+{% block title %}LSTM Results - {{ stock_name }} | Stawks{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'stock-home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">LSTM - {{ stock_name }}</li>
+      </ol>
+    </nav>
+    <h2><i class="bi bi-diagram-3"></i> LSTM Neural Network Results</h2>
+    <p class="text-muted">Recurrent Neural Network trained on {{ stock_name }} with {{ epochs }} epochs</p>
   </div>
-  <div>
-    {{ prediction_chart | safe }}
-    <p>{{ epochs }} epochs used</p>
+</div>
+
+<!-- Prediction Card -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card bg-dark border-success h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Tomorrow's Predicted Price</small>
+        <h1 class="text-success mb-0">${{ tom_price }}</h1>
+        <small class="text-muted">{{ stock_name }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Model Type</small>
+        <h4 class="mb-0">LSTM</h4>
+        <small class="text-muted">Long Short-Term Memory</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Training Epochs</small>
+        <h4 class="mb-0">{{ epochs }}</h4>
+        <small class="text-muted">iterations</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-down"></i> Model Loss</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ model_loss_chart|safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bullseye"></i> Prediction vs Actual</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ prediction_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <a href="{% url 'stock-home' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
   </div>
 </div>
 {% endblock %}

@@ -1,43 +1,54 @@
 from django.shortcuts import render
-from .forms import TickerForm
-from .forms import EpochForm
-from .forms import CryptoForm
+from .forms import TickerForm, EpochForm, CryptoForm
 from .predictions import Prediction
 from .RFClassifier import RFClassifier
+from .XGBModel import XGBStockModel
 from .Crypto import Crypto
-
-import json
-import os
-import pandas as pd
-from django.http import HttpResponse
-import random
-import datetime
-import time
+from .sentiment import analyze_sentiment
 
 
 def home(request):
     ticker = TickerForm()
-    epoch = EpochForm()
     history_chart = ''
+    volume_chart = ''
+    ma_chart = ''
+    stock_info = None
+    price_change = None
+    sentiment = None
+
+    pred = Prediction()
+    market_overview = pred.get_market_overview()
+
     if request.method == "POST":
         ticker = TickerForm(request.POST)
         if ticker.is_valid():
+            ticker_str = ticker.cleaned_data['ticker'].upper()
 
-            # Get Stock Data and Make a History Chart
-            tick_obj = TickerForm()
-            tick_obj.ticker = ticker.cleaned_data['ticker']
-            print(tick_obj.ticker)
-            pred = Prediction()
-            stock_data = pred.get_data(tick_obj.ticker)
-            history_chart = pred.get_history_candlestick(stock_data)
-            ticker_str = tick_obj.ticker
+            try:
+                stock_info = pred.get_stock_info(ticker_str)
+                price_change = pred.get_price_change(stock_info)
+                stock_data = pred.get_data(ticker_str)
+                history_chart = pred.get_history_candlestick(stock_data)
+                volume_chart = pred.get_volume_chart(stock_data)
+                ma_chart = pred.get_moving_averages_chart(stock_data)
+                sentiment = analyze_sentiment(ticker_str, stock_info.get('name', ''))
+            except Exception as e:
+                stock_info = {'error': str(e)}
+                sentiment = None
+
             request.session['ticker_str'] = ticker_str
+            ticker = TickerForm()
 
-    else:
-        ticker = TickerForm()
-    print(ticker)
-    print(epoch)
-    return render(request, 'Stocks/home.html', context={'form': ticker, 'epoch': epoch, 'history_chart': history_chart})
+    return render(request, 'Stocks/home.html', context={
+        'form': ticker,
+        'market_overview': market_overview,
+        'history_chart': history_chart,
+        'volume_chart': volume_chart,
+        'ma_chart': ma_chart,
+        'stock_info': stock_info,
+        'price_change': price_change,
+        'sentiment': sentiment,
+    })
 
 
 def about(request):
@@ -45,107 +56,145 @@ def about(request):
 
 
 def recurrent(request):
-    if 'ticker_str' in request.session:
-        epochs = 30
-        ticker_str = request.session.get('ticker_str', 'Ticker')
-        pred = Prediction()
-        stock_data = pred.get_data(ticker_str)
-        x_train, x_test, scaler = pred.make_train_test(stock_data)
-        x_t, y_t, x_val, y_val, x_test_t, y_test_t = pred.make_test_and_val(
-            x_train, x_test)
+    ticker_str = request.session.get('ticker_str')
+    if not ticker_str:
+        return render(request, 'Stocks/home.html', {
+            'form': TickerForm(),
+            'error': 'Please enter a stock ticker first.',
+        })
 
-        model, stock_history = pred.train_model(
-            'adam', x_t, y_t, x_val, y_val, epochs)
-        model_loss_chart = pred.make_model_loss_chart(
-            stock_history, ticker_str)
+    epochs = 100  # EarlyStopping will halt training when val_loss plateaus
+    pred = Prediction()
+    stock_info = pred.get_stock_info(ticker_str)
+    stock_data = pred.get_data(ticker_str)
+    x_train, x_test, scaler = pred.make_train_test(stock_data)
+    x_t, y_t, x_val, y_val, x_test_t, y_test_t = pred.make_test_and_val(x_train, x_test)
 
-        prediction, real_data = pred.unscale_data(
-            model, x_test_t, y_test_t, scaler)
+    model, stock_history = pred.train_model('adam', x_t, y_t, x_val, y_val, epochs)
+    model_loss_chart = pred.make_model_loss_chart(stock_history, ticker_str)
 
-        prediction_chart = pred.make_prediction_chart(
-            prediction, real_data, ticker_str)
+    prediction, real_data = pred.unscale_data(model, x_test_t, y_test_t, scaler)
+    prediction_chart = pred.make_prediction_chart(prediction, real_data, ticker_str)
 
-        tom_price = 0
-        tom_price = pred.predict_tomorrows_price(
-            stock_data, model, scaler, y_test_t)
+    tom_price = pred.predict_tomorrows_price(stock_data, model, scaler, y_test_t)
 
-    return render(request, 'Stocks/recurrent.html', context={'title': 'Recurrent',
-                                                             'epochs': epochs, 'stock_name': ticker_str, 'tom_price': tom_price,
-                                                             'model_loss_chart': model_loss_chart, 'prediction_chart': prediction_chart})
+    return render(request, 'Stocks/recurrent.html', context={
+        'title': 'Recurrent',
+        'epochs': epochs,
+        'stock_name': ticker_str,
+        'stock_info': stock_info,
+        'tom_price': tom_price,
+        'model_loss_chart': model_loss_chart,
+        'prediction_chart': prediction_chart,
+    })
 
 
 def randomForest(request):
-    if 'ticker_str' in request.session:
-        ticker_str = request.session.get('ticker_str', 'Ticker')
-        rf = RFClassifier()
-        rf_data = rf.get_data(ticker_str)
-        X, y = rf.make_features(rf_data)
-        X_train, X_test, y_train, y_test = rf.split_data(X, y, rf_data)
-        model = rf.make_model(X_train, X_test, y_train, y_test)
-        rf.make_charts(model, rf_data, X, ticker_str)
-        tom_price = rf.predict_tomorrow(model, X)
+    ticker_str = request.session.get('ticker_str')
+    if not ticker_str:
+        return render(request, 'Stocks/home.html', {
+            'form': TickerForm(),
+            'error': 'Please enter a stock ticker first.',
+        })
 
-    return render(request, 'Stocks/random-forests.html', context={'title': 'Random Forest Classifier',
-                                                                  'stock_name': ticker_str, 'tom_price': tom_price})
+    rf = RFClassifier()
+    rf_data = rf.get_data(ticker_str)
+    X, y = rf.make_features(rf_data)
+    X_train, X_test, y_train, y_test = rf.split_data(X, y, rf_data)
+    model = rf.make_model(X_train, X_test, y_train, y_test)
+    histogram_chart, returns_chart = rf.make_charts(model, rf_data, X, ticker_str)
+    tom_price = rf.predict_tomorrow(model, X)
+
+    return render(request, 'Stocks/random-forests.html', context={
+        'title': 'Random Forest Classifier',
+        'stock_name': ticker_str,
+        'tom_price': tom_price,
+        'histogram_chart': histogram_chart,
+        'returns_chart': returns_chart,
+    })
+
+
+def xgboost(request):
+    ticker_str = request.session.get('ticker_str')
+    if not ticker_str:
+        return render(request, 'Stocks/home.html', {
+            'form': TickerForm(),
+            'error': 'Please enter a stock ticker first.',
+        })
+
+    xgb_model = XGBStockModel()
+    data = xgb_model.get_data(ticker_str)
+    df = xgb_model.engineer_features(data)
+    results = xgb_model.train(df)
+
+    feature_chart = xgb_model.make_feature_importance_chart(results['feature_importance'])
+    backtest_chart = xgb_model.make_backtest_chart(
+        results['cumulative'], results['buy_hold'])
+
+    current_price = round(float(data['Close'].iloc[-1]), 2)
+    avg_move = df['return_1d'].abs().tail(20).mean()
+    if results['direction'] == 'up':
+        implied_price = round(current_price * (1 + avg_move), 2)
+    else:
+        implied_price = round(current_price * (1 - avg_move), 2)
+
+    return render(request, 'Stocks/xgboost.html', context={
+        'title': 'XGBoost',
+        'stock_name': ticker_str,
+        'direction': results['direction'],
+        'confidence': results['confidence'],
+        'accuracy': results['accuracy'],
+        'precision': results['precision'],
+        'current_price': current_price,
+        'implied_price': implied_price,
+        'feature_chart': feature_chart,
+        'backtest_chart': backtest_chart,
+    })
 
 
 def crypto(request):
-
-    crypto = CryptoForm()
+    crypto_form = CryptoForm()
     crypto_history_chart = ''
+    crypto_info = None
+
     if request.method == "POST":
-        crypto = CryptoForm(request.POST)
-        if crypto.is_valid():
+        crypto_form = CryptoForm(request.POST)
+        if crypto_form.is_valid():
+            crypto_str = crypto_form.cleaned_data['crypto']
+            try:
+                coin = Crypto(crypto_str)
+                data = coin.get_data()
+                crypto_info = coin.get_crypto_info()
+                crypto_history_chart = coin.get_crypto_candlestick(data)
+                request.session['crypto_str'] = crypto_str
+            except Exception as e:
+                crypto_info = {'error': str(e)}
+            crypto_form = CryptoForm()
 
-            crypt_obj = CryptoForm()
-            crypt_obj.crypto = crypto.cleaned_data['crypto']
-            print(crypt_obj.crypto)
-            coin = Crypto(crypt_obj.crypto)
-            data = coin.get_data()
-            # coin.make_history_chart(data)
-            crypto_history_chart = coin.get_crypto_candlestick(data)
-            crypto_str = crypt_obj.crypto
-            request.session['crypto_str'] = crypto_str
-        else:
-            crypto = CryptoForm()
-
-    return render(request, 'Stocks/crypto.html', context={'title': 'crypto', 'form': crypto,
-                                                          'crypto_history_chart': crypto_history_chart})
+    return render(request, 'Stocks/crypto.html', context={
+        'title': 'Crypto',
+        'form': crypto_form,
+        'crypto_history_chart': crypto_history_chart,
+        'crypto_info': crypto_info,
+    })
 
 
 def cryptoModel(request):
-    if 'crypto_str' in request.session:
-        crypto_str = request.session.get('crypto_str', 'Crypto')
-        print(crypto_str)
-        coin = Crypto(crypto_str)
-        data = coin.get_data()
-        tom_price = coin.make_model(data)
+    crypto_str = request.session.get('crypto_str')
+    if not crypto_str:
+        return render(request, 'Stocks/crypto.html', {
+            'form': CryptoForm(),
+            'error': 'Please enter a cryptocurrency first.',
+        })
 
-    return render(request, 'Stocks/crypto-model.html', context={'title': 'Crypto Model',
-                                                                'crypto_name': crypto_str, 'tom_price': tom_price})
+    coin = Crypto(crypto_str)
+    data = coin.get_data()
+    tom_price, model_loss_chart, prediction_chart = coin.make_model(data)
 
-
-def demo_linechart(request):
-    """
-    lineChart page
-    """
-    start_time = int(time.mktime(
-        datetime.datetime(2012, 6, 1).timetuple()) * 1000)
-    nb_element = 100
-    xdata = range(nb_element)
-    xdata = map(lambda x: start_time + x * 1000000000, xdata)
-    ydata = [i + random.randint(1, 10) for i in range(nb_element)]
-    ydata2 = map(lambda x: x * 2, ydata)
-
-    tooltip_date = "%d %b %Y %H:%M:%S %p"
-    extra_serie = {"tooltip": {"y_start": "", "y_end": " cal"},
-                   "date_format": tooltip_date}
-    chartdata = {'x': xdata,
-                 'name1': 'series 1', 'y1': ydata, 'extra1': extra_serie,
-                 'name2': 'series 2', 'y2': ydata2, 'extra2': extra_serie}
-    charttype = "lineChart"
-    data = {
-        'charttype': charttype,
-        'chartdata': chartdata
-    }
-    return render_to_response('linechart.html', data)
+    return render(request, 'Stocks/crypto-model.html', context={
+        'title': 'Crypto Model',
+        'crypto_name': crypto_str,
+        'tom_price': tom_price,
+        'model_loss_chart': model_loss_chart,
+        'prediction_chart': prediction_chart,
+    })

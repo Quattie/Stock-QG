@@ -1,3 +1,63 @@
-{% extends 'Stocks/base.html'%} {% block content %}
-<h1>About Page</h1>
-{% endblock content %}
+{% extends 'Stocks/base.html' %}
+
+{% block title %}About | Stawks{% endblock %}
+
+{% block content %}
+<div class="row py-5">
+  <div class="col-lg-8 mx-auto">
+    <h1 class="mb-4"><i class="bi bi-info-circle"></i> About Stawks</h1>
+
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-body">
+        <h5>What is this?</h5>
+        <p class="text-muted">
+          Stawks (Stock Quick Gains) is a web app that lets you explore stock and crypto data,
+          then train machine learning models to predict future prices. It started as a masters
+          project and has been modernized with a full dashboard experience.
+        </p>
+        <p class="text-muted mb-0">
+          This is a proof of concept -- not financial advice. Don't YOLO your savings based on
+          what an LSTM tells you.
+        </p>
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-body">
+        <h5>Models Available</h5>
+        <div class="row g-3 mt-2">
+          <div class="col-md-6">
+            <h6 class="text-success"><i class="bi bi-diagram-3"></i> LSTM Neural Network</h6>
+            <p class="text-muted small">
+              A recurrent neural network that learns temporal patterns in price data.
+              Trained on historical OHLCV data with a sliding window approach.
+            </p>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-success"><i class="bi bi-tree"></i> Random Forest Classifier</h6>
+            <p class="text-muted small">
+              An ensemble method using 500 decision trees to classify whether a stock
+              will go up or down the next day based on engineered features.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+      <div class="card-body">
+        <h5>Built With</h5>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <span class="badge bg-secondary fs-6">Django 5</span>
+          <span class="badge bg-secondary fs-6">TensorFlow / Keras</span>
+          <span class="badge bg-secondary fs-6">scikit-learn</span>
+          <span class="badge bg-secondary fs-6">Plotly</span>
+          <span class="badge bg-secondary fs-6">yfinance</span>
+          <span class="badge bg-secondary fs-6">Bootstrap 5</span>
+          <span class="badge bg-secondary fs-6">Python</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
