@@ -7,7 +7,9 @@ urlpatterns = [
     path('recurrent/', views.recurrent, name='stock-recurrent'),
     path('random-forests/', views.randomForest, name='stock-random-forests'),
     path('xgboost/', views.xgboost, name='stock-xgboost'),
+    path('strategy/', views.strategy, name='stock-strategy'),
     path('paper-trading/', views.paper_trading, name='stock-paper-trading'),
+    path('alpaca/', views.alpaca_trading, name='stock-alpaca'),
     path('crypto/', views.crypto, name='stock-crypto'),
     path('crypto-model/', views.cryptoModel, name='stock-crypto-model'),
 ]

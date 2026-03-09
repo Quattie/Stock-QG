@@ -1,0 +1,231 @@
+{% extends 'Stocks/base.html' %}
+{% load static %}
+
+{% block title %}Strategy - {{ stock_name }} | Stawks{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'stock-home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Strategy - {{ stock_name }}</li>
+      </ol>
+    </nav>
+    <h2><i class="bi bi-bullseye"></i> Multi-Horizon Strategy</h2>
+    <p class="text-muted">XGBoost predictions at 1-day, 5-day, and 20-day horizons for {{ stock_name }}</p>
+  </div>
+</div>
+
+<!-- Strategy Recommendation Banner -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card border-{{ strategy.color }}"
+         style="background: linear-gradient(135deg,
+           {% if strategy.color == 'success' %}#0a2e14{% elif strategy.color == 'danger' %}#2e0a0a{% elif strategy.color == 'info' %}#0a1e2e{% elif strategy.color == 'warning' %}#2e2a0a{% else %}#1a1a1a{% endif %},
+           #0d1117);">
+      <div class="card-body py-4">
+        <div class="row align-items-center">
+          <div class="col-md-4 text-center">
+            <small class="text-muted d-block mb-1">Strategy Signal</small>
+            <h1 class="text-{{ strategy.color }} mb-1">{{ strategy.action }}</h1>
+            <span class="text-muted">avg confidence {{ strategy.avg_confidence }}%</span>
+          </div>
+          <div class="col-md-8">
+            <p class="mb-2 fs-5">{{ strategy.rationale }}</p>
+            <div class="d-flex gap-4 flex-wrap">
+              {% for h in horizons %}
+              <div>
+                <small class="text-muted">{{ h.horizon.name }}</small>
+                <span class="fw-bold {% if h.direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+                  {% if h.direction == 'up' %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
+                  {{ h.expected_return }}%
+                </span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Horizon Detail Cards -->
+<div class="row g-3 mb-4">
+  {% for h in horizons %}
+  <div class="col-md-4">
+    <div class="card bg-dark border-{% if h.direction == 'up' %}success{% else %}danger{% endif %} h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ h.horizon.name }}</h5>
+        <span class="badge bg-{% if h.direction == 'up' %}success{% else %}danger{% endif %}">
+          {% if h.direction == 'up' %}<i class="bi bi-arrow-up"></i> UP{% else %}<i class="bi bi-arrow-down"></i> DOWN{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6 mb-3">
+            <small class="text-muted d-block">Confidence</small>
+            <h4 class="mb-0 {% if h.confidence >= 60 %}text-success{% elif h.confidence >= 55 %}text-warning{% else %}text-muted{% endif %}">
+              {{ h.confidence }}%
+            </h4>
+          </div>
+          <div class="col-6 mb-3">
+            <small class="text-muted d-block">Expected Return</small>
+            <h4 class="mb-0 {% if h.expected_return > 0 %}text-success{% else %}text-danger{% endif %}">
+              {{ h.expected_return }}%
+            </h4>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Price Target</small>
+            <h5 class="mb-0">${{ h.price_target }}</h5>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Backtest Accuracy</small>
+            <h5 class="mb-0">{{ h.accuracy }}%</h5>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Current Price Context -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">Current Price</small>
+        <h3 class="mb-0">${{ current_price }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">1-Day Target</small>
+        <h3 class="mb-0 {% if strategy.signals.1d.direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+          ${{ strategy.price_targets.1d }}
+        </h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">5-Day Target</small>
+        <h3 class="mb-0 {% if strategy.signals.5d.direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+          ${{ strategy.price_targets.5d }}
+        </h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body text-center">
+        <small class="text-muted">20-Day Target</small>
+        <h3 class="mb-0 {% if strategy.signals.20d.direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+          ${{ strategy.price_targets.20d }}
+        </h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Multi-Horizon Backtest</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ multi_horizon_chart|safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-radar"></i> Accuracy vs Confidence</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ radar_chart|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-crosshair"></i> Price Targets</h5>
+      </div>
+      <div class="card-body chart-container">
+        {{ price_target_chart|safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Model Quality by Horizon</h5>
+      </div>
+      <div class="card-body">
+        <table class="table table-dark table-sm">
+          <thead>
+            <tr>
+              <th>Horizon</th>
+              <th>Direction Accuracy</th>
+              <th>Return Model R&sup2;</th>
+              <th>Confidence</th>
+              <th>Prediction</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in horizons %}
+            <tr>
+              <td>{{ h.horizon.name }}</td>
+              <td>{{ h.accuracy }}%</td>
+              <td>{{ h.reg_r2 }}%</td>
+              <td>{{ h.confidence }}%</td>
+              <td class="{% if h.direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+                {% if h.direction == 'up' %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
+                {{ h.expected_return }}%
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <small class="text-muted">
+          R&sup2; measures how well the regression model explains return variance.
+          Higher = more reliable price targets.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <small class="text-muted">
+      <i class="bi bi-info-circle"></i>
+      Separate XGBoost models trained per horizon on 80% of data. Strategy synthesized from direction,
+      confidence, and expected returns across all timeframes. Past performance does not guarantee future results.
+    </small>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12 d-flex gap-2">
+    <a href="{% url 'stock-home' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+    <a href="{% url 'stock-xgboost' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-lightning-fill"></i> XGBoost Detail
+    </a>
+  </div>
+</div>
+{% endblock %}

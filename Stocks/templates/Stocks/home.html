@@ -425,11 +425,18 @@
       <div class="card-body">
         <h5 class="card-title"><i class="bi bi-lightning-fill"></i> XGBoost Classifier</h5>
         <p class="text-muted">Gradient-boosted trees with 24 engineered technical indicators. Primary model.</p>
-        <form action="{% url 'stock-xgboost' %}" method="GET">
-          <button type="submit" class="btn btn-success" onclick="trainingLoad()">
-            <i class="bi bi-play-fill"></i> Run XGBoost
-          </button>
-        </form>
+        <div class="d-flex gap-2">
+          <form action="{% url 'stock-xgboost' %}" method="GET">
+            <button type="submit" class="btn btn-success" onclick="trainingLoad()">
+              <i class="bi bi-play-fill"></i> Run XGBoost
+            </button>
+          </form>
+          <form action="{% url 'stock-strategy' %}" method="GET">
+            <button type="submit" class="btn btn-outline-info" onclick="trainingLoad()">
+              <i class="bi bi-bullseye"></i> Strategy
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </div>

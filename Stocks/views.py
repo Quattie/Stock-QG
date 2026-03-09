@@ -6,6 +6,8 @@ from .XGBModel import XGBStockModel
 from .paper_trader import PaperTrader, LiveTrader
 from .Crypto import Crypto
 from .sentiment import analyze_sentiment
+from .strategy import MultiHorizonStrategy
+from .alpaca_trader import AlpacaTrader
 
 
 def home(request):
@@ -175,6 +177,43 @@ def xgboost(request):
     })
 
 
+def strategy(request):
+    ticker_str = request.session.get('ticker_str')
+    if not ticker_str:
+        return render(request, 'Stocks/home.html', {
+            'form': TickerForm(),
+            'error': 'Please enter a stock ticker first.',
+        })
+
+    engine = MultiHorizonStrategy()
+    data = engine.xgb_helper.get_data(ticker_str)
+    df = engine.engineer_features(data)
+    horizon_results = engine.train_all(df)
+
+    current_price = round(float(data['Close'].iloc[-1]), 2)
+    strat = engine.synthesize_strategy(horizon_results, current_price)
+
+    # Attach price targets to each horizon result for template convenience
+    for hr in horizon_results:
+        hr['price_target'] = strat['price_targets'][hr['horizon']['key']]
+
+    multi_horizon_chart = engine.make_multi_horizon_chart(horizon_results)
+    price_target_chart = engine.make_price_target_chart(
+        current_price, strat['price_targets'], strat)
+    radar_chart = engine.make_confidence_radar(horizon_results)
+
+    return render(request, 'Stocks/strategy.html', context={
+        'title': 'Strategy',
+        'stock_name': ticker_str,
+        'current_price': current_price,
+        'strategy': strat,
+        'horizons': horizon_results,
+        'multi_horizon_chart': multi_horizon_chart,
+        'price_target_chart': price_target_chart,
+        'radar_chart': radar_chart,
+    })
+
+
 def paper_trading(request):
     trader = PaperTrader()
     live = LiveTrader()
@@ -267,6 +306,119 @@ def paper_trading(request):
         'live_chart': live_chart,
         'live_predictions': list(reversed(live.predictions[-20:])),
         'live_trades': list(reversed(live.trades[-20:])),
+    })
+
+
+def alpaca_trading(request):
+    alpaca = AlpacaTrader()
+    if not alpaca.is_configured:
+        return render(request, 'Stocks/alpaca.html', {
+            'title': 'Alpaca Trading',
+            'error': 'Alpaca API not configured. Set ALPACA_API_KEY and ALPACA_SECRET in .env',
+        })
+
+    order_result = None
+    order_error = None
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'buy':
+            ticker = request.POST.get('ticker', '').upper().strip()
+            qty = int(request.POST.get('qty', 0))
+            if ticker and qty > 0:
+                try:
+                    order_result = alpaca.place_order(ticker, qty, 'buy')
+                except Exception as e:
+                    order_error = str(e)
+
+        elif action == 'sell':
+            ticker = request.POST.get('ticker', '').upper().strip()
+            qty = int(request.POST.get('qty', 0))
+            if ticker and qty > 0:
+                try:
+                    order_result = alpaca.place_order(ticker, qty, 'sell')
+                except Exception as e:
+                    order_error = str(e)
+
+        elif action == 'close_position':
+            ticker = request.POST.get('close_ticker', '').upper().strip()
+            if ticker:
+                try:
+                    alpaca.close_position(ticker)
+                except Exception as e:
+                    order_error = str(e)
+
+        elif action == 'close_all':
+            try:
+                alpaca.close_all_positions()
+            except Exception as e:
+                order_error = str(e)
+
+        elif action == 'strategy_order':
+            ticker = request.POST.get('ticker', '').upper().strip()
+            qty = int(request.POST.get('qty', 0))
+            side = request.POST.get('side', 'buy')
+            if ticker and qty > 0:
+                try:
+                    order_result = alpaca.place_order(ticker, qty, side)
+                except Exception as e:
+                    order_error = str(e)
+
+    # Fetch current state
+    account = None
+    positions = []
+    orders = []
+    strategy_suggestion = None
+
+    try:
+        account = alpaca.get_account_summary()
+    except Exception as e:
+        order_error = f'Account error: {e}'
+
+    try:
+        positions = alpaca.get_positions()
+    except Exception:
+        pass
+
+    try:
+        orders = alpaca.get_recent_orders()
+    except Exception:
+        pass
+
+    # If there's a ticker in session, generate strategy suggestion
+    ticker_str = request.session.get('ticker_str')
+    if ticker_str and account:
+        try:
+            engine = MultiHorizonStrategy()
+            data = engine.xgb_helper.get_data(ticker_str)
+            df = engine.engineer_features(data)
+            horizon_results = engine.train_all(df)
+            current_price = round(float(data['Close'].iloc[-1]), 2)
+            strat = engine.synthesize_strategy(horizon_results, current_price)
+
+            suggested_order = alpaca.calculate_order(
+                ticker_str, strat['action'], current_price)
+
+            strategy_suggestion = {
+                'ticker': ticker_str,
+                'action': strat['action'],
+                'color': strat['color'],
+                'rationale': strat['rationale'],
+                'current_price': current_price,
+                'suggested_order': suggested_order,
+            }
+        except Exception:
+            pass
+
+    return render(request, 'Stocks/alpaca.html', context={
+        'title': 'Alpaca Trading',
+        'account': account,
+        'positions': positions,
+        'orders': orders,
+        'order_result': order_result,
+        'order_error': order_error,
+        'strategy_suggestion': strategy_suggestion,
     })
 
 
